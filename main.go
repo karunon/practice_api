@@ -8,7 +8,6 @@ import (
 
 func main() {
 	r := gin.Default()
-	controller.Initial()
 	{
 		r.GET("/tasks", controller.GetAll)
 		r.POST("tasks", controller.Create)
