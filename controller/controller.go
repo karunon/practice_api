@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"practice_api/data"
+	"sort"
 	"unicode/utf8"
 
 	"github.com/gin-gonic/gin"
@@ -11,6 +12,12 @@ import (
 )
 
 var list []data.Task
+
+func sortList() {
+	sort.Slice(list, func(i, j int) bool {
+		return list[i].Id < list[j].Id
+	})
+}
 
 func GetAll(c *gin.Context) {
 	c.JSON(http.StatusAccepted, list)
@@ -36,8 +43,9 @@ func Create(c *gin.Context) {
 			Description: p_json.Description,
 		}
 		list = append(list, task)
-
 		c.JSON(http.StatusAccepted, task)
+
+		sortList()
 	} else {
 		c.String(http.StatusCreated, "title is very long\n")
 	}
