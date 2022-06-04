@@ -12,28 +12,17 @@ import (
 
 var list []data.Task
 
-func searchKey(searchkey string, searchValue string) data.Task {
-	var t data.Task
-	for _, t = range list {
-		for k, v := range t {
-			if k == searchkey && v == searchValue {
-				return t
-			}
-		}
-	}
-	return nil
-}
-
 func GetAll(c *gin.Context) {
-	for _, task := range list {
-		c.JSON(http.StatusOK, task)
-	}
+	c.JSON(http.StatusAccepted, list)
 }
 
 func Create(c *gin.Context) {
-	title := c.DefaultPostForm("title", "none")
-	title_len := utf8.RuneCountInString(title)
-	description := c.DefaultPostForm("description", "none")
+	var p_json data.PostJsonRequest
+	if err := c.ShouldBindJSON((&p_json)); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	title_len := utf8.RuneCountInString(p_json.Title)
 
 	if 0 < title_len && title_len < 32 {
 		id, err := uuid.NewRandom()
@@ -41,12 +30,14 @@ func Create(c *gin.Context) {
 			log.Println(err)
 			return
 		}
-		list = append(list, data.Task{"id": id.String(), "title": title, "description": description})
-		for _, t := range list {
-			c.JSON(200, t)
-			c.String(200, "\n")
+		task := data.Task{
+			Id:          id.String(),
+			Title:       p_json.Title,
+			Description: p_json.Description,
 		}
-		c.JSON(http.StatusCreated, "ok")
+		list = append(list, task)
+
+		c.JSON(http.StatusAccepted, task)
 	} else {
 		c.String(http.StatusCreated, "title is very long\n")
 	}
@@ -54,35 +45,42 @@ func Create(c *gin.Context) {
 
 func GetOne(c *gin.Context) {
 	search_id := c.Param("task_id")
-	result := searchKey("id", search_id)
 
-	if result == nil {
-		c.String(http.StatusBadRequest, "No Task")
-	} else {
-		c.JSON(http.StatusOK, result)
+	flag := false
+	for _, t := range list {
+		if t.Id == search_id {
+			c.JSON(http.StatusOK, t)
+			flag = true
+			return
+		}
+	}
+	if !flag {
+		c.String(http.StatusBadRequest, "cannot find")
 	}
 }
 
 func ModifyOne(c *gin.Context) {
 	search_id := c.Param("task_id")
-	title := c.PostForm("title")
-	description := c.PostForm("description")
+
+	var p_json data.PostJsonRequest
+	if err := c.ShouldBindJSON((&p_json)); err != nil {
+		c.String(http.StatusBadRequest, "shouldBindJSON")
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
 	flag := false
-	for _, t := range list {
-		for k, v := range t {
-			if k == "id" && v == search_id {
-				t["title"] = title
-				t["description"] = description
-				flag = true
-			}
+	for num, t := range list {
+		if t.Id == search_id {
+			list[num].Title = p_json.Title
+			list[num].Description = p_json.Description
+			flag = true
+			c.JSON(http.StatusAccepted, list[num])
+			return
 		}
 	}
 
 	if !flag {
 		c.String(http.StatusBadRequest, "CANNOT")
-	} else {
-		result := searchKey("id", search_id)
-		c.JSON(http.StatusAccepted, result)
 	}
 }

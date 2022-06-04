@@ -1,3 +1,12 @@
 package data
 
-type Task map[string]string
+type Task struct {
+	Id          string `json:"id"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+}
+
+type PostJsonRequest struct {
+	Title       string `json:"title"`
+	Description string `json:"description"`
+}
