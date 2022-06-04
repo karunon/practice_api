@@ -1,3 +1,11 @@
 package data
 
-type Task map[string]string
+// type Tasks struct {
+// 	Todo Task
+// }
+
+type Task struct {
+	Id          string `json:"id"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+}
