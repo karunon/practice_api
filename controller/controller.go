@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"practice_api/data"
+	"sort"
 	"unicode/utf8"
 
 	"github.com/gin-gonic/gin"
@@ -11,6 +12,18 @@ import (
 )
 
 var list []data.Task
+
+func sortList() {
+	sort.Slice(list, func(i, j int) bool {
+		return list[i].Id < list[j].Id
+	})
+}
+
+func lookTaskIntoList(s string) int {
+	length := len(list)
+	i := sort.Search(length, func(i int) bool { return list[i].Id >= s })
+	return i
+}
 
 func GetAll(c *gin.Context) {
 	c.JSON(http.StatusAccepted, list)
@@ -36,8 +49,9 @@ func Create(c *gin.Context) {
 			Description: p_json.Description,
 		}
 		list = append(list, task)
-
 		c.JSON(http.StatusAccepted, task)
+
+		sortList()
 	} else {
 		c.String(http.StatusCreated, "title is very long\n")
 	}
@@ -45,16 +59,11 @@ func Create(c *gin.Context) {
 
 func GetOne(c *gin.Context) {
 	search_id := c.Param("task_id")
+	i := lookTaskIntoList(search_id)
 
-	flag := false
-	for _, t := range list {
-		if t.Id == search_id {
-			c.JSON(http.StatusOK, t)
-			flag = true
-			return
-		}
-	}
-	if !flag {
+	if list[i].Id == search_id {
+		c.JSON(http.StatusAccepted, list[i])
+	} else {
 		c.String(http.StatusBadRequest, "cannot find")
 	}
 }
@@ -69,18 +78,12 @@ func ModifyOne(c *gin.Context) {
 		return
 	}
 
-	flag := false
-	for num, t := range list {
-		if t.Id == search_id {
-			list[num].Title = p_json.Title
-			list[num].Description = p_json.Description
-			flag = true
-			c.JSON(http.StatusAccepted, list[num])
-			return
-		}
-	}
-
-	if !flag {
+	i := lookTaskIntoList(search_id)
+	if list[i].Id == search_id {
+		list[i].Title = p_json.Title
+		list[i].Description = p_json.Description
+		c.JSON(http.StatusAccepted, list[i])
+	} else {
 		c.String(http.StatusBadRequest, "CANNOT")
 	}
 }
