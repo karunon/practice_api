@@ -9,3 +9,8 @@ type Task struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`
 }
+
+type PostJsonRequest struct {
+	Title       string `json:"title"`
+	Description string `json:"description"`
+}

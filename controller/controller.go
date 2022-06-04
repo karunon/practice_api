@@ -1,29 +1,33 @@
 package controller
 
 import (
+	"encoding/json"
+	"log"
 	"net/http"
 	"practice_api/data"
+	"unicode/utf8"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 // var list []data.Task
 var list []data.Task
 
 func Initial() {
-	list_1 := data.Task{
-		Id:          "22-22",
-		Title:       "SSS",
-		Description: "xxx",
-	}
+	// list_1 := data.Task{
+	// 	Id:          "22-22",
+	// 	Title:       "SSS",
+	// 	Description: "xxx",
+	// }
 
-	list_2 := data.Task{
-		Id:          "33-33",
-		Title:       "AAA",
-		Description: "YYY",
-	}
+	// list_2 := data.Task{
+	// 	Id:          "33-33",
+	// 	Title:       "AAA",
+	// 	Description: "YYY",
+	// }
 
-	list = append(list, list_1, list_2)
+	// list = append(list, list_1, list_2)
 }
 
 // func searchKey(searchValue string) *data.Task {
@@ -43,9 +47,8 @@ func Initial() {
 // }
 
 func GetAll(c *gin.Context) {
-	// for _, task := range list {
-	// 	c.JSON(http.StatusOK, task)
-	// }
+	jsonData, _ := json.Marshal(list)
+	c.JSON(http.StatusAccepted, string(jsonData))
 }
 
 func Create(c *gin.Context) {
@@ -53,21 +56,40 @@ func Create(c *gin.Context) {
 	// title_len := utf8.RuneCountInString(title)
 	// description := c.DefaultPostForm("description", "none")
 
-	// if 0 < title_len && title_len < 32 {
-	// 	id, err := uuid.NewRandom()
-	// 	if err != nil {
-	// 		log.Println(err)
-	// 		return
-	// 	}
-	// 	list = append(list, data.Task{"id": id.String(), "title": title, "description": description})
-	// 	for _, t := range list {
-	// 		c.JSON(200, t)
-	// 		c.String(200, "\n")
-	// 	}
-	// 	c.JSON(http.StatusCreated, "ok")
-	// } else {
-	// 	c.String(http.StatusCreated, "title is very long\n")
-	// }
+	var p_json data.PostJsonRequest
+	if err := c.ShouldBindJSON((&p_json)); err != nil {
+		c.String(http.StatusBadRequest, "shouldBindJSON")
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	title_len := utf8.RuneCountInString(p_json.Title)
+	c.String(200, p_json.Title)
+
+	if 0 < title_len && title_len < 32 {
+		id, err := uuid.NewRandom()
+		if err != nil {
+			c.String(http.StatusBadRequest, "UUIDerror")
+			log.Println(err)
+			return
+		}
+		task := data.Task{
+			Id:          id.String(),
+			Title:       p_json.Title,
+			Description: p_json.Description,
+		}
+		list = append(list, task)
+
+		json_data, er := json.Marshal(task)
+		if er != nil {
+			c.String(http.StatusBadRequest, "Maeshal error")
+			log.Println(er)
+			return
+		} else {
+			c.JSON(http.StatusCreated, string(json_data))
+		}
+	} else {
+		c.String(http.StatusCreated, "title is very long\n")
+	}
 }
 
 func GetOne(c *gin.Context) {
